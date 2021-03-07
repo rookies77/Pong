@@ -1,0 +1,21 @@
+include head.pug
+
+body
+.container
+  header
+    .col-12.mt-2.position-sticky.bg-secondaire.bg-gradient Atelier back End Ifocop
+  h1.mt-5.text-center= title  
+      
+  div.container
+    div.formulaire-wrapper
+      form(action='/game' class="formulaire" id="formulaire" method='POST')
+        label(for="pseudo") Mettez votre pseudo 
+          input(type='text' class="form-control input-pseudo" id='pseudo' name='pseudo' required)
+
+          button(type="submit" class="btn btn-primary") Valider
+
+
+
+
+footer
+    include footer.pug

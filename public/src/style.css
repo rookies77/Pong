@@ -1,0 +1,23 @@
+.canvas-container{
+  height: 70vh;
+  border: 10px solid rgb(252, 222, 222);
+  width: 90vw;
+  margin: 0 auto;
+}
+.formulaire-wrapper{
+  height: 70vh;
+  background-color: azure;
+}
+.formulaire{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+label{
+  text-align: center;
+}
+footer{
+  text-align: center;
+  margin: 15px auto;
+}

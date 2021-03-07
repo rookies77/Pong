@@ -1,0 +1,20 @@
+include head.pug
+script(src="socket.io/socket.io.js")
+
+body
+    h1= title
+    h6
+    h5 Vous êtes connecté sous le pseudo de 
+        strong #{pseudo}
+    p.message Utiliser les fleches pour controler les palets bleu 
+      button#start-game.btn.btn-outline-danger Commencer
+
+    section.canvas-container
+      .d-flex.flex-column.align-items-center.justify-content-center.h-100
+            canvas#canvas
+      .list-player
+
+
+script(src="/js/index.js")
+footer
+    include footer.pug
