@@ -2,17 +2,24 @@ include head.pug
 script(src="socket.io/socket.io.js")
 
 body
-    h1= title
-    h6
+  .container
+    .title_container
+      h1= title
+      img#avatar
     h5 Vous êtes connecté sous le pseudo de 
         strong #{pseudo}
     p.message Utiliser les fleches pour controler les palets bleu 
-      button#start-game.btn.btn-outline-danger Commencer
+    button#start-game.btn.btn-outline-danger.start-game  Commencer
+    button#reset-button.reset-game.btn.btn-outline-info Reset
+    button#return-game.return-game.btn.btn-outline-secondary Recommencer la partie
 
     section.canvas-container
       .d-flex.flex-column.align-items-center.justify-content-center.h-100
-            canvas#canvas
-      .list-player
+        h2#winner1.winner Player 1 win
+        h2#winner2.winner Player 2 win
+        canvas#canvas
+      h3#previous-game
+      #list-player
 
 
 script(src="/js/index.js")

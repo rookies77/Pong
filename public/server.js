@@ -8,14 +8,19 @@ const mongodb = require('mongodb');
 const port = process.env.PORT || 8080;
 const socketIO = require('socket.io');
 const session = require('express-session');
-// const dbUrl = "mongodb+srv://rookies:Rukaka77@cluster0.qotkq.mongodb.net/test";
-const dbUrl = "mongodb://localhost:27017/atelier-back";
+const dbUrl = "mongodb+srv://rookies:Rukaka77@cluster0.qotkq.mongodb.net/test";
+// const dbUrl = "mongodb://localhost:27017/atelier-back";
 const collectionName = 'game';
 const dbName = "aterlier-back";
 const chalk = require('chalk');
-const collision = require('../annexe_js/collision.js')
-
+let playerExpress = {};
+let players = {}; // les joueurs du pong
+let score1 = 2;
+let score2 = 2;
 let chalkColor;
+let differentTime = 0;
+let currentPlayer = 0;
+
 
 function consoleLog(arg1, arg2, arg3) { // fonctionne sur serveur node 
 
@@ -64,42 +69,18 @@ app.get('/', (req, res) => {
 
 app.post('/game', (req, res, next) => {
   let toto = req.body.pseudo;
-  players.name = toto;
-  console.log('pseudo post : ', players);
-  consoleLog('pseudo par la methode POST', 'blue', players);
-
-
-  mongodb.MongoClient.connect(dbUrl, {
-    useUnifiedTopology: true
-  }, (error, client) => {
-    if (error) {
-      return next(error);
-    } else {
-      const db = client.db();
-      db.collection('game', (error, collection) => {
-        if (error) {
-          return next(error);
-        } else {
-          collection.insertOne(players)
-        }
-      })
-    }
-  })
-
-  console.log('dataAsObject:', players)
+  if (!playerExpress.player1) {
+    playerExpress.player1 = toto;
+  } else if (!playerExpress.player2) {
+    playerExpress.player2 = toto;
+  }
 
   res.render('game.pug', {
     title: 'Bienvenue dans le jeu du Pong',
-    pseudo: req.body.pseudo,
+    pseudo: req.body.pseudo, // affichage du nom du joueur en front
   })
 
 })
-
-app.get('/waiting-room', (req, res, next) => {
-  res.render('waiting-room.pug', {
-    title: 'Page d\'attente !'
-  })
-});
 
 app.all('*', (req, res, next) => {
   next(new Error('page not found'));
@@ -113,25 +94,12 @@ app.use((error, req, res, next) => {
 });
 
 const server = app.listen(port, () => {
-  console.log('on ecoute sur le port ...')
+  console.log('on ecoute sur le port ...', port)
 })
 
-
-
 //------------------------------------------ Player ------------------------------------------//
-class Player {
-  constructor(id, width, height, color, xPos, yPos) {
-    this.id = id;
-    this.width = width;
-    this.height = height;
-    this.color = color;
-    this.xPos = xPos;
-    this.yPos = yPos;
-  }
-  inGame = false;
-  socketId = 0;
-  ip = '';
-}
+
+
 //------------------------------------------ Ball ------------------------------------------//
 class Ball {
   xOldPos = -1;
@@ -166,128 +134,195 @@ class Canvas {
 
 //------------------------------------------ Initialisation ------------------------------------------//
 const maxPlayer = 2;
-let listConnectedIp = [];
-let allSocketId = [];
 let playersInGame = 0;
 let interval;
 let canvas = new Canvas(800, 500)
 let ball = new Ball(10, '#333', canvas.width / 2, canvas.height / 2, 3, 2, 2);
-let players = []
-//   new Player(0, 10, 75, 'blue', 0, canvas.height / 2),
-//   new Player(1, 10, 75, 'brown', canvas.width - 10, canvas.height / 2),
-// ]
-let player1;
-let player2;
-let playerId = -1;
-let allSocket = [];
+
 
 // SOCKET IO SERVER **************************************************
 const io = socketIO(server);
 
-
-
 io.on('connection', function (socket) {
-  console.log('on est connecté en socketIO') // lorsqu'on esr connecté
+  console.log('on est connecté en socketIO', socket.connected) // lorsqu'on est connecté
+
   if (playersInGame < maxPlayer) {
-
-    if (allSocket.length != 0) {
-
-      player2 = new Player(1, 10, 75, 'brown', canvas.width - 10, canvas.height / 2)
-      player2.inGame = true;
-      player2.id = socket.id
-      allSocket.push(player2.id);
+    if (playersInGame == 1) {
+      players[socket.id] = {
+        index: 1,
+        width: 10,
+        height: 75,
+        color: 'brown',
+        xPos: canvas.width - 10,
+        yPos: canvas.height / 2,
+        speed: 5,
+        inGame: true,
+        id: socket.id,
+      }
       playersInGame += 1;
-      players.push(player2)
-    }else{
-      player1 = new Player(0, 10, 75, 'blue', 0, canvas.height / 2)
-      player1.inGame = true;
-      player1.id = socket.id;
-      allSocket.push(player1.id);
+      image2 = 'src/boy.png';
+    } else if (playersInGame == 0) {
+      players[socket.id] = {
+        index: 0,
+        width: 10,
+        height: 75,
+        color: 'blue',
+        xPos: 0,
+        yPos: canvas.height / 2,
+        speed: 5,
+        inGame: true,
+        id: socket.id,
+      }
       playersInGame += 1;
-      players.push(player1)
+      currentPlayer++;
+      image1 = '/src/batman.png';
     }
- 
-      
-    
-
-
-
   }
 
-  console.log('playerIn GAME ', playersInGame)
-  // if (playersInGame < maxPlayer) {
-  //   let currentPlayer = 0;
-  //   while (players[currentPlayer].inGame && currentPlayer < playersInGame) {
-  //     currentPlayer += 1;
-  //   }
-  //   allSocketId.push(socket.id);
-  //   players[currentPlayer].ip = socket.handshake.address;
-  //   players[currentPlayer].socketId = socket.id;
-  //   players[currentPlayer].inGame = true;
-  //   playerId = players[currentPlayer].id;
-  //   playersInGame += 1;
-  //   consoleLog('currentplayer', 'blue', players[currentPlayer].id)
-  // }
+  socket.on('score_restart', function (data) {
+    score1 = data.score;
+    score2 = data.score;
+  })
+
   socket.emit('donnésDuCanvasDuServer', canvas);
-  // socket.emit('connexionDuJoueur', playerId);
+  socket.emit('playerInGame', playersInGame)
 
-  // consoleLog('playerID','yellow', playerId)
 
+  // Lancement du jeu -------------------
   socket.on('start-game', () => {
     clearInterval(interval);
-    let currentTime = new Date();
+    score1 = 2; // Score des joueurs de depart 
+    score2 = 2;
+    let currentTime = new Date(); // debut du compteur du jeu au lancement de la partie
     let startTime = currentTime;
-    let differentTime = 0;
 
     ball.xPos = canvas.width / 2;
     ball.yPos = canvas.height / 2;
 
     // boucle du jeu
-
     interval = setInterval(() => {
-      currentTime = new Date();
-      differentTime = (currentTime - startTime) / 1000; // seconde ecoulé depuis le debut du temps
-      ball.moveBall(ball)
-      collision.wallCollision(ball, canvas)
+      currentTime = new Date(); // fin du compteur du jeu a la fin de la partie
+      differentTime = Math.round((currentTime - startTime) / 1000); // seconde ecoulé depuis le debut du temps
 
-      io.emit('draw-everything', {
+      ball.moveBall(ball);
+      wallCollision(ball, canvas);
+
+      io.emit('draw-everything', { // envoie des données vers les navigateurs 
         ball: ball,
-        players
+        players: Object.values(players), // envoyé en array
+        score1: score1,
+        score2: score2,
+        time: differentTime
+
       });
     }, (1000 / 60));
-
-    console.log('player tableau', players)
-
   })
-  // console.log('allsocketId ', allSocketId)
-  // consoleLog('allSocketId.length : ', 'green', allSocketId.length)
-  socket.on('envoieDuMovementY', (data) => {
-    // console.log('playerId envoie',playerId)
-    console.log(data)
-    if (data.socketId == player1.id) {
-      player1.yPos = data.moveY;
+  let playersArray = Object.values(players)
+
+  // LES collisions sur les murs et sur les raquettes
+  function wallCollision(ball, canvas) {
+    // Collision bord gauche
+    if (playersInGame == 2) {
+
+      if ((ball.xPos - ball.radius) < 0) {
+        score1-- ; // reduction du score quand la balle touche le mur gauche 
+        ball.dx = -ball.dx; // inversement de la direction de la balle au rebond du mur
+
+        if (ball.xPos - ball.radius < playersArray[0].xPos + playersArray[0].width && ball.yPos + ball.radius > playersArray[0].yPos && ball.yPos - ball.radius < playersArray[0].yPos + playersArray[0].height) {
+          ball.dx = +ball.dx; //  inversement de la direction de la balle au rebond de la raquette
+          consoleLog('toto', 'red')
+          score1++; // avec le reduction du score avec le mur + l'augmentation avec la raquette le score ne bouge pas
+        }
+
+      }
+      // Collision bord droit
+      else if ((ball.xPos + ball.radius) > canvas.width) {
+        ball.dx = -ball.dx;
+        score2-- ;
+        if (ball.xPos + ball.radius > playersArray[1].xPos && ball.yPos - ball.radius > playersArray[1].yPos && ball.yPos + ball.radius < playersArray[1].yPos + playersArray[1].height) {
+          ball.dx = +ball.dx;
+          score2++
+        }
+
+      }
+
+      // Collision bord haut
+      else if ((ball.yPos - ball.radius) < 0) {
+        ball.dy = -ball.dy;
+      }
+
+      // Collision bord bas
+      else if ((ball.yPos + ball.radius) > canvas.height) {
+        ball.dy = -ball.dy;
+      }
     }
-    
-    // if(data.socketId == player2.id){
-    //   player2.yPos = data.moveY
-    // }
-    // console.log('player1 id ', player1.id)
-    // if (player2) {
-    //   console.log('player2 id ', player2.id)
-    // }
+    // condition fin de la partie et insertion des joueurs dans la base de donnée 
+    if (score1 == 0) {
+      if (!playerExpress.time) {
+        playerExpress.time = differentTime
+      }
+      mongodb.MongoClient.connect(dbUrl, {
+        useUnifiedTopology: true
+      }, (error, client) => {
+        if (error) {
+          return next(error);
+        } else {
+          const db = client.db();
+          db.collection('game', (error, collection) => {
+            if (error) {
+              return next(error);
+            } else {
+              collection.insertOne(playerExpress) // insertion de l'objet playerExpressJson dans la BDD
+            }
+          })
+        }
+      })
+   
+      clearInterval(interval) // on arrete la game 
 
-    // console.log('allsocket ', allSocket)
-    // if (player2.id == 1) {
-    //   player2.yPos = data;
-    // }
+    } else if (score2 == 0) {
+      if (!playerExpress.time) { // recuperation du temps joué pendant la partie
+        playerExpress.time = differentTime
+      }
+      mongodb.MongoClient.connect(dbUrl, {
+        useUnifiedTopology: true
+      }, (error, client) => {
+        if (error) {
+          return next(error);
+        } else {
+          const db = client.db();
+          db.collection('game', (error, collection) => {
+            if (error) {
+              return next(error);
+            } else {
+              collection.insertOne(playerExpress)
+            }
+          })
+        }
+      })
+      clearInterval(interval)
+    }
+
+  }
 
 
 
-  })
+  // recuperation du mouvement de la raquette du front --------------------------------------------
+  socket.on('move up', function () {
+    players[socket.id].yPos -= players[socket.id].speed;
+    if (players[socket.id].yPos < 0) {
+      players[socket.id].yPos = 0
+    }
 
+  });
 
+  socket.on('move down', function () {
+    players[socket.id].yPos += players[socket.id].speed;
+    if (players[socket.id].yPos > canvas.height - players[socket.id].height) {
+      players[socket.id].yPos = canvas.height - players[socket.id].height
+    }
 
-
+  });
 
 
   mongodb.MongoClient.connect(dbUrl, {
@@ -304,30 +339,24 @@ io.on('connection', function (socket) {
           if (!error) {
 
             socket.emit('envoieMessage', document)
-            // console.log(document)
+            // console.log('list des joueurs pour la lecture : ', document)
           }
         })
       })
     }
   })
 
-  consoleLog('tableau allsocket', 'yellow', allSocket)
+
 
   // --------- Déconnexion du client ---------//
   socket.on('disconnect', () => {
-    allsocket = []
-    let index = listConnectedIp.indexOf({
-      address: socket.handshake.address,
-      id: playerId
-    });
-    listConnectedIp.splice(index, 1);
-    io.emit('get-connected-ip', listConnectedIp);
-
-    if (playerId != -1) {
-      playersInGame--;
-      players[playerId].inGame = false;
-      players[playerId].ip = "";
-    }
+    delete players[socket.id]
+    console.log('un joueur vient de quitter')
+    players = {}
+    playersInGame = 0
+    io.emit('restart')
+    playerExpress = {};
+    clearInterval(interval)
   })
 
 

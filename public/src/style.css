@@ -1,9 +1,9 @@
-.canvas-container{
-  height: 70vh;
+/* .canvas-container{
+  height: 60vh;
   border: 10px solid rgb(252, 222, 222);
-  width: 90vw;
+  width: 80vw;
   margin: 0 auto;
-}
+} */
 .formulaire-wrapper{
   height: 70vh;
   background-color: azure;
@@ -14,10 +14,27 @@
   flex-direction: column;
   justify-content: center;
 }
+.winner{
+  display: none;
+}
 label{
   text-align: center;
+}
+.start-game, .reset-game, .return-game  {
+  margin: 1rem auto;
 }
 footer{
   text-align: center;
   margin: 15px auto;
+}
+#previous-game{
+  margin-top: 1rem;
+}
+canvas{
+  border: 10px solid pink;
+
+}
+.title_container{
+  display: flex;
+  justify-content: space-between;
 }
